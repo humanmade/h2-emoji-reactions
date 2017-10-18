@@ -60,7 +60,4 @@ function group_by_type( $reactions ) {
  */
 function is_valid_type( $type ) {
 	return true;
-	// $all_emoji = Emoji\get_data_map();
-	// $emoji = wp_list_pluck( $all_emoji, 'char' );
-	// return in_array( $type, $emoji );
 }
