@@ -194,6 +194,7 @@ class Reaction {
 		$args = [
 			'type'    => static::TYPE,
 			'post_id' => $post->ID,
+			'parent'  => '0',
 		];
 		$comments = get_comments( $args );
 		$reactions = static::to_instances( $comments );
