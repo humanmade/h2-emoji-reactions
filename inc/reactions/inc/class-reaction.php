@@ -186,6 +186,52 @@ class Reaction {
 	}
 
 	/**
+	 * Get all reactions for a comment on a post.
+	 *
+	 * @param WP_Post|int|null $post Post to add to. Post object, post ID (int), or null for current post.
+	 * @param WP_Comment|int|null $comment Comment object, comment ID (int), or null for current comment.
+	 * @return Reaction[]|WP_Error Reactions on success (may be empty), error on invalid arguments.
+	 */
+	public static function get_for_comment( $post, $comment ) {
+		$post = get_post( $post );
+		if ( empty( $post ) ) {
+			return new WP_Error(
+				'h2.reactions.get_for_comment.invalid_post',
+				__( 'Invalid post to fetch reactions for', 'h2' ),
+				// Set the data to the value of $post from the arguments
+				func_get_arg( 0 )
+			);
+		}
+
+		$comment = get_comment( $comment );
+		if ( empty( $comment ) || (int) $comment->comment_post_ID !== $post->ID ) {
+			return new WP_Error(
+				'h2.reactions.get_for_comment.invalid_comment',
+				__( 'Invalid comment to fetch reactions for', 'h2' ),
+				// Set the data to the value of $post from the arguments
+				func_get_arg( 1 )
+			);
+		}
+
+		$args = [
+			'type'    => static::TYPE,
+			'post_id' => $post->ID,
+			'parent'  => $comment->comment_ID,
+		];
+		$comments = get_comments( $args );
+		$reactions = static::to_instances( $comments );
+
+		/**
+		 * Filter the reactions on a comment.
+		 *
+		 * @param Reaction[] $reactions Reactions on the comment.
+		 * @param WP_Post $post Post the reactions belong to.
+		 * @param WP_Comment $comment Comment the reactions belong to.
+		 */
+		return apply_filters( 'h2.reactions.get_for_comment', $reactions, $post );
+	}
+
+	/**
 	 * Create a new reaction to a post.
 	 *
 	 * @param WP_Post|int|null $post Post to add to. Post object, post ID (int), or null for current post.
