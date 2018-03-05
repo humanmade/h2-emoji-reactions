@@ -256,7 +256,7 @@ class Reaction {
 		}
 
 		// Check if we're at the limit
-		$can_create = static::can_create_reaction( $post, $type, $user );
+		$can_create = static::can_create_reaction( $post, $type, $user, $comment );
 		if ( is_wp_error( $can_create ) ) {
 			return $can_create;
 		}
@@ -293,9 +293,10 @@ class Reaction {
 	 *
 	 * @param WP_Post $post Post to create reaction for.
 	 * @param string $type Emoji character to add as a reaction.
+	 * @param int $comment Comment ID if reacting to a comment.
 	 * @return boolean|WP_Error True if we can create the reaction, error describing why not otherwise.
 	 */
-	protected static function can_create_reaction( WP_Post $post, $type, WP_User $user ) {
+	protected static function can_create_reaction( WP_Post $post, $type, WP_User $user, $comment = null ) {
 		// Is this a valid user?
 		if ( ! $user->exists() ) {
 			return new WP_Error(
@@ -308,7 +309,12 @@ class Reaction {
 		}
 
 		// Check if we're at the limit
-		$existing = Reaction::get_for_post( $post );
+		if ( $comment ) {
+			$existing = Reaction::get_for_comment( $post, $comment );
+		} else {
+			$existing = Reaction::get_for_post( $post );
+		}
+
 		if ( is_wp_error( $existing ) ) {
 			return $existing;
 		}
