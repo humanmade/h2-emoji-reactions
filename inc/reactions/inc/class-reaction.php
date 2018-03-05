@@ -348,10 +348,11 @@ class Reaction {
 		if ( $limit && count( $grouped ) === $limit && ! isset( $grouped[ $type ] ) ) {
 			return new WP_Error(
 				'h2.reactions.create.max_reactions',
-				__( 'Post already has the maximum number of reactions', 'h2' ),
+				__( 'Message already has the maximum number of reactions', 'h2' ),
 				[
-					'post'   => $post->ID,
-					'status' => 403,
+					'post'    => $post->ID,
+					'comment' => $comment,
+					'status'  => 403,
 				]
 			);
 		}
