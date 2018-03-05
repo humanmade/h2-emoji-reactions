@@ -262,13 +262,14 @@ class API_Endpoint extends WP_REST_Controller {
 	 * @return mixed
 	 */
 	public function prepare_item_for_response( $item, $request ) {
+		$comment = (int) $item->get_comment_id();
 		$data = [
 			'id'        => $item->get_id(),
 			'type'      => $item->get_type(),
 			'type_name' => $item->get_type_name(),
 			'author'    => $item->get_user_id(),
 			'post'      => $item->get_post_id(),
-			'comment'   => $item->get_comment_id(),
+			'comment'   => $comment ? $comment : null,
 		];
 
 		$response = new WP_REST_Response( $data );
