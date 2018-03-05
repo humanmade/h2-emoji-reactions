@@ -221,6 +221,7 @@ class API_Endpoint extends WP_REST_Controller {
 			'type_name' => $item->get_type_name(),
 			'author'    => $item->get_user_id(),
 			'post'      => $item->get_post_id(),
+			'comment'   => $item->get_comment_id(),
 		];
 
 		$response = new WP_REST_Response( $data );
