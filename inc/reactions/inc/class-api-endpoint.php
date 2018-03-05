@@ -49,7 +49,7 @@ class API_Endpoint extends WP_REST_Controller {
 					),
 					'id' => array(
 						'required'          => true,
-						'validate_callback' => array( $this, 'validate_comment_id' ),
+						'validate_callback' => array( $this, 'validate_reaction_id' ),
 					),
 				),
 			),
@@ -66,7 +66,7 @@ class API_Endpoint extends WP_REST_Controller {
 					),
 					'id' => array(
 						'required'          => true,
-						'validate_callback' => array( $this, 'validate_comment_id' ),
+						'validate_callback' => array( $this, 'validate_reaction_id' ),
 					),
 				),
 			),
@@ -179,7 +179,7 @@ class API_Endpoint extends WP_REST_Controller {
 		return true;
 	}
 
-	public function validate_comment_id( $value ) {
+	public function validate_reaction_id( $value ) {
 		if ( empty( $value ) ) {
 			return false;
 		}
