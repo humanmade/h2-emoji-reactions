@@ -20,6 +20,11 @@ class API_Endpoint extends WP_REST_Controller {
 						'required'          => true,
 						'validate_callback' => array( $this, 'validate_post_argument' ),
 					),
+					'comment' => array(
+						'required'          => false,
+						'default'           => null,
+						'sanitize_callback' => array( $this, 'validate_comment_id' ),
+					),
 				),
 			],
 			array(
@@ -30,6 +35,11 @@ class API_Endpoint extends WP_REST_Controller {
 					'post' => array(
 						'required'          => true,
 						'validate_callback' => array( $this, 'validate_post_argument' ),
+					),
+					'comment' => array(
+						'required'          => false,
+						'default'           => null,
+						'sanitize_callback' => array( $this, 'validate_comment_id' ),
 					),
 					'type' => array(
 						'required'          => true,
@@ -75,7 +85,11 @@ class API_Endpoint extends WP_REST_Controller {
 
 	public function get_items( $request ) {
 		$post = get_post( $request['post'] );
-		$reactions = Reaction::get_for_post( $post );
+		if ( $request['comment'] ) {
+			$reactions = Reaction::get_for_comment( $post, $request['comment'] );
+		} else {
+			$reactions = Reaction::get_for_post( $post );
+		}
 
 		if ( is_wp_error( $reactions ) ) {
 			return $reactions;
@@ -106,7 +120,8 @@ class API_Endpoint extends WP_REST_Controller {
 	public function create_item( $request ) {
 		$post = get_post( $request['post'] );
 		$type = $request['type'];
-		$reaction = Reaction::create( $post, $type );
+		$comment = $request['comment'] ? $request['comment'] : null;
+		$reaction = Reaction::create( $post, $type, null, $comment );
 		if ( is_wp_error( $reaction ) ) {
 			return $reaction;
 		}
@@ -181,6 +196,38 @@ class API_Endpoint extends WP_REST_Controller {
 		}
 
 		return true;
+	}
+
+	public function validate_comment_id( $value, WP_REST_Request $request ) {
+		if ( empty( $value ) || ! preg_match( '/^\d+$/', $value ) ) {
+			return false;
+		}
+
+		/** @var \WP_Comment */
+		$comment = get_comment( $value );
+		if ( ! $comment || ( $comment->comment_type !== 'comment' && $comment->comment_type !== '' ) ) {
+			return new WP_Error(
+				'h2.reactions.invalid_comment',
+				__( 'Invalid comment ID', 'h2' ),
+				[
+					'id'     => $value,
+					'status' => 400,
+				]
+			);
+		}
+
+		if ( (int) $comment->comment_post_ID !== (int) $request['post'] ) {
+			return new WP_Error(
+				'h2.reactions.invalid_comment_for_post',
+				__( 'Comment does not belong to specified post.', 'h2' ),
+				[
+					'id'     => $value,
+					'status' => 400,
+				]
+			);
+		}
+
+		return $comment->comment_ID;
 	}
 
 	public function validate_reaction_id( $value ) {
