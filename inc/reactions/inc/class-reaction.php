@@ -50,6 +50,28 @@ class Reaction {
 	}
 
 	/**
+	 * Get the comment the reaction belongs to.
+	 *
+	 * @return WP_Comment|null Comment object, or null if this is a reaction to the post.
+	 */
+	public function get_comment() {
+		$id = $this->get_comment_id();
+		if ( ! $id ) {
+			return false;
+		}
+		return get_comment( $id );
+	}
+
+	/**
+	 * Get the comment ID the reaction belongs to.
+	 *
+	 * @return int Comment ID (0 if this is a reaction to the post).
+	 */
+	public function get_comment_id() {
+		return $this->comment->comment_parent;
+	}
+
+	/**
 	 * Get the type (emoji) of the reaction.
 	 *
 	 * @return string Emoji character.
