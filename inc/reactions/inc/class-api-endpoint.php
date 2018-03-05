@@ -77,6 +77,10 @@ class API_Endpoint extends WP_REST_Controller {
 		$post = get_post( $request['post'] );
 		$reactions = Reaction::get_for_post( $post );
 
+		if ( is_wp_error( $reactions ) ) {
+			return $reactions;
+		}
+
 		$items = array();
 		foreach ( $reactions as $reaction ) {
 			$data = $this->prepare_item_for_response( $reaction, $request );
