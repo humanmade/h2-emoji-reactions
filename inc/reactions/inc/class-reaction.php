@@ -191,9 +191,10 @@ class Reaction {
 	 * @param WP_Post|int|null $post Post to add to. Post object, post ID (int), or null for current post.
 	 * @param string $type Emoji character to add as a reaction.
 	 * @param WP_User|null User to create reaction as. Null for current user.
+	 * @param int $comment Parent comment, if reacting to a comment.
 	 * @return Reaction|WP_Error Reaction object on success, error on failure.
 	 */
-	public static function create( $post, $type, $user = null ) {
+	public static function create( $post, $type, $user = null, $comment = null ) {
 		$post = get_post( $post );
 		if ( empty( $post ) ) {
 			return new WP_Error(
@@ -224,6 +225,10 @@ class Reaction {
 			'comment_post_ID'      => $post->ID,
 			'comment_type'         => static::TYPE,
 		];
+
+		if ( $comment ) {
+			$data['comment_parent'] = $comment;
+		}
 
 		$comment_id = wp_insert_comment( wp_slash( $data ) );
 		if ( ! $comment_id ) {
