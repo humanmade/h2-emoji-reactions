@@ -50,6 +50,28 @@ class Reaction {
 	}
 
 	/**
+	 * Get the comment the reaction belongs to.
+	 *
+	 * @return WP_Comment|null Comment object, or null if this is a reaction to the post.
+	 */
+	public function get_comment() {
+		$id = $this->get_comment_id();
+		if ( ! $id ) {
+			return false;
+		}
+		return get_comment( $id );
+	}
+
+	/**
+	 * Get the comment ID the reaction belongs to.
+	 *
+	 * @return int Comment ID (0 if this is a reaction to the post).
+	 */
+	public function get_comment_id() {
+		return $this->comment->comment_parent;
+	}
+
+	/**
 	 * Get the type (emoji) of the reaction.
 	 *
 	 * @return string Emoji character.
@@ -172,6 +194,7 @@ class Reaction {
 		$args = [
 			'type'    => static::TYPE,
 			'post_id' => $post->ID,
+			'parent'  => '0',
 		];
 		$comments = get_comments( $args );
 		$reactions = static::to_instances( $comments );
@@ -186,14 +209,61 @@ class Reaction {
 	}
 
 	/**
+	 * Get all reactions for a comment on a post.
+	 *
+	 * @param WP_Post|int|null $post Post to add to. Post object, post ID (int), or null for current post.
+	 * @param WP_Comment|int|null $comment Comment object, comment ID (int), or null for current comment.
+	 * @return Reaction[]|WP_Error Reactions on success (may be empty), error on invalid arguments.
+	 */
+	public static function get_for_comment( $post, $comment ) {
+		$post = get_post( $post );
+		if ( empty( $post ) ) {
+			return new WP_Error(
+				'h2.reactions.get_for_comment.invalid_post',
+				__( 'Invalid post to fetch reactions for', 'h2' ),
+				// Set the data to the value of $post from the arguments
+				func_get_arg( 0 )
+			);
+		}
+
+		$comment = get_comment( $comment );
+		if ( empty( $comment ) || (int) $comment->comment_post_ID !== $post->ID ) {
+			return new WP_Error(
+				'h2.reactions.get_for_comment.invalid_comment',
+				__( 'Invalid comment to fetch reactions for', 'h2' ),
+				// Set the data to the value of $post from the arguments
+				func_get_arg( 1 )
+			);
+		}
+
+		$args = [
+			'type'    => static::TYPE,
+			'post_id' => $post->ID,
+			'parent'  => $comment->comment_ID,
+		];
+		$comments = get_comments( $args );
+		$reactions = static::to_instances( $comments );
+
+		/**
+		 * Filter the reactions on a comment.
+		 *
+		 * @param Reaction[] $reactions Reactions on the comment.
+		 * @param WP_Post $post Post the reactions belong to.
+		 * @param WP_Comment $comment Comment the reactions belong to.
+		 */
+		return apply_filters( 'h2.reactions.get_for_comment', $reactions, $post );
+	}
+
+	/**
 	 * Create a new reaction to a post.
 	 *
 	 * @param WP_Post|int|null $post Post to add to. Post object, post ID (int), or null for current post.
 	 * @param string $type Emoji character to add as a reaction.
 	 * @param WP_User|null User to create reaction as. Null for current user.
+	 * @param int $comment Parent comment, if reacting to a comment.
 	 * @return Reaction|WP_Error Reaction object on success, error on failure.
 	 */
-	public static function create( $post, $type, $user = null ) {
+	public static function create( $post, $type, $user = null, $comment = null ) {
 		$post = get_post( $post );
 		if ( empty( $post ) ) {
 			return new WP_Error(
@@ -209,7 +279,7 @@ class Reaction {
 		}
 
 		// Check if we're at the limit
-		$can_create = static::can_create_reaction( $post, $type, $user );
+		$can_create = static::can_create_reaction( $post, $type, $user, $comment );
 		if ( is_wp_error( $can_create ) ) {
 			return $can_create;
 		}
@@ -224,6 +294,10 @@ class Reaction {
 			'comment_post_ID'      => $post->ID,
 			'comment_type'         => static::TYPE,
 		];
+
+		if ( $comment ) {
+			$data['comment_parent'] = $comment;
+		}
 
 		$comment_id = wp_insert_comment( wp_slash( $data ) );
 		if ( ! $comment_id ) {
@@ -242,9 +316,10 @@ class Reaction {
 	 *
 	 * @param WP_Post $post Post to create reaction for.
 	 * @param string $type Emoji character to add as a reaction.
+	 * @param int $comment Comment ID if reacting to a comment.
 	 * @return boolean|WP_Error True if we can create the reaction, error describing why not otherwise.
 	 */
-	protected static function can_create_reaction( WP_Post $post, $type, WP_User $user ) {
+	protected static function can_create_reaction( WP_Post $post, $type, WP_User $user, $comment = null ) {
 		// Is this a valid user?
 		if ( ! $user->exists() ) {
 			return new WP_Error(
@@ -257,7 +332,12 @@ class Reaction {
 		}
 
 		// Check if we're at the limit
-		$existing = Reaction::get_for_post( $post );
+		if ( $comment ) {
+			$existing = Reaction::get_for_comment( $post, $comment );
+		} else {
+			$existing = Reaction::get_for_post( $post );
+		}
+
 		if ( is_wp_error( $existing ) ) {
 			return $existing;
 		}
@@ -269,10 +349,11 @@ class Reaction {
 		if ( $limit && count( $grouped ) === $limit && ! isset( $grouped[ $type ] ) ) {
 			return new WP_Error(
 				'h2.reactions.create.max_reactions',
-				__( 'Post already has the maximum number of reactions', 'h2' ),
+				__( 'Message already has the maximum number of reactions', 'h2' ),
 				[
-					'post'   => $post->ID,
-					'status' => 403,
+					'post'    => $post->ID,
+					'comment' => $comment,
+					'status'  => 403,
 				]
 			);
 		}
