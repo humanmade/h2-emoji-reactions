@@ -195,6 +195,7 @@ class Reaction {
 			'type'    => static::TYPE,
 			'post_id' => $post->ID,
 			'parent'  => '0',
+			'order'   => 'ASC',
 		];
 		$comments = get_comments( $args );
 		$reactions = static::to_instances( $comments );
@@ -240,6 +241,7 @@ class Reaction {
 			'type'    => static::TYPE,
 			'post_id' => $post->ID,
 			'parent'  => $comment->comment_ID,
+			'order'   => 'ASC',
 		];
 		$comments = get_comments( $args );
 		$reactions = static::to_instances( $comments );
