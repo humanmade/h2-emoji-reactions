@@ -181,8 +181,8 @@ class Reaction {
 	 * @return Reaction[]|WP_Error Reactions on success (may be empty), error on invalid arguments.
 	 */
 	public static function get_for_post( $post ) {
-		$post = get_post( $post );
-		if ( empty( $post ) ) {
+		$the_post = get_post( $post );
+		if ( empty( $the_post ) ) {
 			return new WP_Error(
 				'h2.reactions.get_for_post.invalid_post',
 				__( 'Invalid post to fetch reactions for', 'h2' ),
@@ -193,7 +193,7 @@ class Reaction {
 
 		$args = [
 			'type'    => static::TYPE,
-			'post_id' => $post->ID,
+			'post_id' => $the_post->ID,
 			'parent'  => '0',
 			'order'   => 'ASC',
 		];
@@ -206,7 +206,7 @@ class Reaction {
 		 * @param Reaction[] $reactions Reactions on the post.
 		 * @param WP_Post $post Post the reactions belong to.
 		 */
-		return apply_filters( 'h2.reactions.get_for_post', $reactions, $post );
+		return apply_filters( 'h2.reactions.get_for_post', $reactions, $the_post );
 	}
 
 	/**
@@ -217,7 +217,7 @@ class Reaction {
 	 * @return Reaction[]|WP_Error Reactions on success (may be empty), error on invalid arguments.
 	 */
 	public static function get_for_comment( $post, $comment ) {
-		$post = get_post( $post );
+		$the_post = get_post( $post );
 		if ( empty( $post ) ) {
 			return new WP_Error(
 				'h2.reactions.get_for_comment.invalid_post',
@@ -227,8 +227,8 @@ class Reaction {
 			);
 		}
 
-		$comment = get_comment( $comment );
-		if ( empty( $comment ) || (int) $comment->comment_post_ID !== $post->ID ) {
+		$the_comment = get_comment( $comment );
+		if ( empty( $comment ) || (int) $the_comment->comment_post_ID !== $the_post->ID ) {
 			return new WP_Error(
 				'h2.reactions.get_for_comment.invalid_comment',
 				__( 'Invalid comment to fetch reactions for', 'h2' ),
@@ -239,8 +239,8 @@ class Reaction {
 
 		$args = [
 			'type'    => static::TYPE,
-			'post_id' => $post->ID,
-			'parent'  => $comment->comment_ID,
+			'post_id' => $the_post->ID,
+			'parent'  => $the_comment->comment_ID,
 			'order'   => 'ASC',
 		];
 		$comments = get_comments( $args );
@@ -253,7 +253,7 @@ class Reaction {
 		 * @param WP_Post $post Post the reactions belong to.
 		 * @param WP_Comment $comment Comment the reactions belong to.
 		 */
-		return apply_filters( 'h2.reactions.get_for_comment', $reactions, $post );
+		return apply_filters( 'h2.reactions.get_for_comment', $reactions, $the_post );
 	}
 
 	/**
@@ -266,7 +266,7 @@ class Reaction {
 	 * @return Reaction|WP_Error Reaction object on success, error on failure.
 	 */
 	public static function create( $post, $type, $user = null, $comment = null ) {
-		$post = get_post( $post );
+		$the_post = get_post( $post );
 		if ( empty( $post ) ) {
 			return new WP_Error(
 				'h2.reactions.create.invalid_post',
@@ -281,7 +281,7 @@ class Reaction {
 		}
 
 		// Check if we're at the limit
-		$can_create = static::can_create_reaction( $post, $type, $user, $comment );
+		$can_create = static::can_create_reaction( $the_post, $type, $user, $comment );
 		if ( is_wp_error( $can_create ) ) {
 			return $can_create;
 		}
@@ -293,7 +293,7 @@ class Reaction {
 			'comment_author_url'   => $user->user_url,
 			'user_id'              => $user->ID,
 			'comment_content'      => $type,
-			'comment_post_ID'      => $post->ID,
+			'comment_post_ID'      => $the_post->ID,
 			'comment_type'         => static::TYPE,
 		];
 
