@@ -15,6 +15,7 @@ class API_Endpoint extends WP_REST_Controller {
 			[
 				'methods'  => WP_REST_Server::READABLE,
 				'callback' => array( $this, 'get_items' ),
+				'permission_callback' => '__return_true',
 				'args'     => array(
 					'post' => array(
 						'required'          => true,
