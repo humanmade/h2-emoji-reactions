@@ -17,7 +17,7 @@ require_once __DIR__ . '/namespace.php';
 require_once __DIR__ . '/inc/class-reaction.php';
 require_once __DIR__ . '/inc/class-api-endpoint.php';
 
-
+add_action( 'do_meta_boxes', __NAMESPACE__ . '\\hide_from_dashboard_widget', 10, 2 );
 add_filter( 'h2.core.classmap', __NAMESPACE__ . '\\Backend\\get_classmap' );
 add_action( 'rest_api_init', __NAMESPACE__ . '\\Backend\\register_endpoints' );
 add_action( 'rest_api_init', __NAMESPACE__ . '\\Backend\\register_link_filters' );

@@ -3,6 +3,7 @@
 namespace H2\Reactions;
 
 use H2\Emoji;
+use WP_Comment_Query;
 use WP_Error;
 
 /**
@@ -60,4 +61,33 @@ function group_by_type( $reactions ) {
  */
 function is_valid_type( $type ) {
 	return true;
+}
+
+/**
+ * Hide reactions from the Dashboard "Recent Comments" widget
+ *
+ * @param string $screen_id Screen being rendered.
+ * @param string $context Metabox content.
+ */
+function hide_from_dashboard_widget( string $screen_id, string $context ) {
+	if ( $screen_id !== 'dashboard' || $context !== 'normal' ) {
+		return;
+	}
+
+	add_action( 'parse_comment_query', __NAMESPACE__ . '\\exclude_from_comment_query' );
+}
+
+/**
+ * Exclude reactions from a comment query.
+ *
+ * This is hooked into `parse_comment_query` where needed, and hides reactions
+ * from the relevant query.
+ *
+ * @param WP_Comment_Query $query Query to be performed.
+ */
+function exclude_from_comment_query( WP_Comment_Query $query ) {
+	if ( empty( $query->query_vars['type__not_in'] ) ) {
+		$query->query_vars['type__not_in'] = [];
+	}
+	$query->query_vars['type__not_in'][] = Reaction::TYPE;
 }
