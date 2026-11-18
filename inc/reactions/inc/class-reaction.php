@@ -3,6 +3,7 @@
 namespace H2\Reactions;
 
 use H2\Emoji;
+use WP_Comment;
 use WP_Error;
 use WP_Post;
 use WP_User;
@@ -14,9 +15,16 @@ class Reaction {
 	const TYPE = 'h2_reaction';
 
 	/**
+	 * Comment object being wrapped.
+	 *
+	 * @var \WP_Comment Comment object.
+	 */
+	protected $comment;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param stdClass $comment Comment object to wrap.
+	 * @param WP_Comment $comment Comment object to wrap.
 	 */
 	public function __construct( $comment ) {
 		$this->comment = $comment;
@@ -135,7 +143,7 @@ class Reaction {
 	 *
 	 * Allows use as a callback, such as in `array_map`
 	 *
-	 * @param stdClass $comment Comment data
+	 * @param WP_Comment $comment Comment data
 	 * @return Reaction
 	 */
 	protected static function to_instance( $comment ) {
@@ -145,7 +153,7 @@ class Reaction {
 	/**
 	 * Convert list of data to Reaction instances
 	 *
-	 * @param stdClass[] $data Raw comment objects
+	 * @param WP_Comment[] $data Raw comment objects
 	 * @return Reaction[]
 	 */
 	protected static function to_instances( $data ) {
@@ -347,8 +355,13 @@ class Reaction {
 		if ( is_wp_error( $grouped ) ) {
 			return $grouped;
 		}
+		// Skin tone variants of the same emoji count once towards the limit.
+		$base_types = [];
+		foreach ( array_keys( $grouped ) as $existing_type ) {
+			$base_types[ get_base_type( (string) $existing_type ) ] = true;
+		}
 		$limit = get_limit();
-		if ( $limit && count( $grouped ) === $limit && ! isset( $grouped[ $type ] ) ) {
+		if ( $limit && count( $base_types ) >= $limit && ! isset( $base_types[ get_base_type( $type ) ] ) ) {
 			return new WP_Error(
 				'h2.reactions.create.max_reactions',
 				__( 'Message already has the maximum number of reactions', 'h2' ),
