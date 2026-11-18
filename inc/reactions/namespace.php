@@ -10,7 +10,8 @@ use WP_Error;
  *
  * To avoid emojispam, you might want to limit the number of reactions a post
  * can have. This limits the number of different types, but allows as many of
- * each type as you have users.
+ * each type as you have users. Skin tone variants of the same emoji count as a
+ * single type.
  *
  * @return int|boolean Limit number if set, or false for no limit.
  */
@@ -47,6 +48,22 @@ function group_by_type( $reactions ) {
 	}
 
 	return $grouped;
+}
+
+/**
+ * Get the base emoji for a type, without any skin tone modifiers.
+ *
+ * eg 👍🏽 => 👍. Types without skin tones (including custom emoji) are returned
+ * unchanged.
+ *
+ * @param string $type Reaction type (emoji character(s)).
+ * @return string Type with skin tone modifiers (U+1F3FB to U+1F3FF) removed.
+ */
+function get_base_type( $type ) {
+	$base = preg_replace( '/[\x{1F3FB}-\x{1F3FF}]/u', '', $type );
+
+	// preg_replace() returns null for invalid UTF-8.
+	return $base ?? $type;
 }
 
 /**
